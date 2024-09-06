@@ -53,7 +53,9 @@ extern Node *new_node_num(int val);
 extern Node *expr();
 extern Node *mul();
 extern Node *primary();
+extern Node *unary();
 extern void gen(Node *node);
+
 
 //現在着目しているトークン
 Token *token;
@@ -201,11 +203,11 @@ Node *expr() {
 }
 
 Node *mul() {
-	Node *node = primary();
+	Node *node = unary();
 
 	for (;;) {
-		if (consume('*')) node = new_node(ND_MUL, node, primary());
-		else if (consume('/')) node = new_node(ND_DIV, node, primary());
+		if (consume('*')) node = new_node(ND_MUL, node, unary());
+		else if (consume('/')) node = new_node(ND_DIV, node, unary());
 		else return node;
 	}
 }
@@ -220,6 +222,13 @@ Node *primary() {
 
 	//それ以外は数値
 	return new_node_num(expect_num());
+}
+
+Node *unary() {
+	if (consume('+')) return primary();
+
+	if (consume('-')) return new_node(ND_SUB, new_node_num(0), primary());
+	return primary();
 }
 
 void gen(Node *node) {
