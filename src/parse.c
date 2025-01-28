@@ -1,6 +1,18 @@
 #include "f-cc.h"
 
-Node *code[100];
+
+LVar *find_lvar(Token *tok) {
+	for (LVar *var = locals; var; var = var->next) {
+		if (var->len == tok->len && !memcmp(tok->str, var->name, var->len)) {
+			return var;
+		}
+	}
+	return NULL;
+}
+
+int is_alnum(char c) {
+	return ('a' <= c && c <= 'z') || ('A' <= c && c <= 'Z') || ('0' <= c && c <= '9') || c == '_';
+}
 
 void err(char *fmt, ...) {
 	va_list ap;
@@ -19,8 +31,9 @@ bool consume(char *op) {
 	return true;
 }
 
-bool consume_ident(char *op) {
-	if (token->kind != TK_IDENT || strlen(op) != token->len || memcmp(token->str, op, token->len)) retuen false;
+bool consume_ident() {
+	if (token->kind != TK_IDENT) 
+		return false;
 
 	token = token->next;
 	return true;
@@ -63,14 +76,19 @@ Token *tokenize(char *p) {
 	head.next = NULL;
 	Token *cur = &head;
 
-
 	while (*p) {
 		//空白文字をスキップ
 		if (isspace(*p)) {
 			p++;
 			continue;
 		}
-
+		// if (memcmp(p, "return", strlen("return")) == 0 && !is_alnum(p[strlen("return")])) {
+		// 	tokens[i].ty = TK_RETURN;
+		// 	tokens[i].str = p;
+		// 	i++;
+		// 	p += strlen("return");
+		// 	continue;
+		// }
 
 		//if (startswith(p, "==") || startswith(p, "!=") || startswith(p, "<=") || startswith(p, ">=")) {
 		if (memcmp(p, "==", strlen("==")) == 0 || memcmp(p, "!=", strlen("!=")) == 0 || memcmp(p, ">=", strlen(">=")) == 0 || memcmp(p, "<=", strlen("<=")) == 0) {
@@ -139,9 +157,20 @@ void program() {
 }
 
 Node *stmt() {
-	Node *node = expr();
-	expect(";");
-	return node;	
+	Node *node;
+
+	if (consume(TK_RETURN)) {
+		node = calloc(1, sizeof(Node));
+		node->kind;
+		node->lhs = expr();
+	} else {
+		node = expr();
+	}
+
+	if (!consume(";")) {
+		err_at(token->str, "';'ではありません");
+	}
+	return node;
 }
 
 Node *expr() {
@@ -223,11 +252,23 @@ Node *primary() {
 
 	Token *tok = consume_ident();
 	if (tok) {
-		Node *node = calloc(1, sizeof(Node));
-		node->kind = ND_LVAR;
-		node->offset = (tok->str[0] - 'a' + 1) * 8;
-		return node;
-	}
+  Node *node = calloc(1, sizeof(Node));
+  node->kind = ND_LVAR;
+
+  LVar *lvar = find_lvar(tok);
+  if (lvar) {
+    node->offset = lvar->offset;
+  } else {
+    lvar = calloc(1, sizeof(LVar));
+    lvar->next = locals;
+    lvar->name = tok->str;
+    lvar->len = tok->len;
+    lvar->offset = locals->offset + 8;
+    node->offset = lvar->offset;
+    locals = lvar;
+  }
+  return node;
+}
 	//それ以外は数値
 	return new_node_num(expect_num());
 }

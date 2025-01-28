@@ -11,6 +11,7 @@ typedef enum {
 	TK_NUM,			//整数トークン
 	TK_EOF,			//入力の終わり
 	TK_IDENT,		//識別子
+	TK_RETURN,		//return
 } TokenKind;
 
 typedef struct Token Token;
@@ -38,10 +39,13 @@ typedef enum {
 	ND_GT,	//>
 	ND_GE, // >=
 	ND_LVAR, // ローカル変数
-	ND_NUM // 整数
+	ND_NUM, // 整数
+	ND_ASSIGN, // =
+	ND_RETURN // return
 } NodeKind;
 
 typedef struct Node Node;
+typedef struct LVar LVar;
 
 //抽象構文木のノードの型
 struct Node {
@@ -51,6 +55,16 @@ struct Node {
 	int val;
 	int offset; //kindがND_LVARの時に使う
 };
+
+struct LVar {
+	LVar *next; // 次の変数かNULL
+	char *name; // 変数の名前
+	int len; // 名前の長さ
+	int offset; // RBPからのオフセット
+};
+
+//ローカル変数
+LVar *locals;
 
 extern Token *token;
 extern char *usr_input;
@@ -64,7 +78,8 @@ Token *new_token(TokenKind , Token *, char *, int);
 Token *tokenize(char *p);
 void err_at(char *, char *, ...);
 Node *new_node(NodeKind kind, Node *lhs, Node *rhs);
-
+LVar *find_lvar(Token *tok);
+int is_alnum(char c);
 
 Node *program();
 Node *stmt();
@@ -79,3 +94,5 @@ Node *add();
 
 void gen(Node *node);
 void gen_lval(Node *node);
+
+Node *code[100];
