@@ -1,5 +1,7 @@
 #include "f-cc.h"
 
+Node *code[100];
+
 void err(char *fmt, ...) {
 	va_list ap;
 	va_start(ap, fmt);
@@ -13,6 +15,13 @@ bool consume(char *op) {
 	if (token->kind != TK_RESERVED || 
 		strlen(op) != token->len ||
 		memcmp(token->str, op, token->len)) return false;
+	token = token->next;
+	return true;
+}
+
+bool consume_ident(char *op) {
+	if (token->kind != TK_IDENT || strlen(op) != token->len || memcmp(token->str, op, token->len)) retuen false;
+
 	token = token->next;
 	return true;
 }
@@ -122,12 +131,17 @@ Node *new_node_num(int val) {
 	return node;
 }
 
-Node *program() {
-
+void program() {
+	int i = 0;
+	while (!at_eof())
+		code[i++] = stmt();
+	code[i] = NULL;
 }
 
 Node *stmt() {
-
+	Node *node = expr();
+	expect(";");
+	return node;	
 }
 
 Node *expr() {
@@ -137,9 +151,9 @@ Node *expr() {
 Node *assign() {
     Node *node = equality();
 
-    for (;;) {
-        
-    }
+	if (consume("="))
+		node = new_node(ND_ASSIGN, node, assign());
+	return node;
 }
 
 Node *equality() {
@@ -207,6 +221,13 @@ Node *primary() {
 		return node;
 	} 
 
+	Token *tok = consume_ident();
+	if (tok) {
+		Node *node = calloc(1, sizeof(Node));
+		node->kind = ND_LVAR;
+		node->offset = (tok->str[0] - 'a' + 1) * 8;
+		return node;
+	}
 	//それ以外は数値
 	return new_node_num(expect_num());
 }

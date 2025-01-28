@@ -37,6 +37,8 @@ typedef enum {
 	ND_LE,	// <=
 	ND_GT,	//>
 	ND_GE, // >=
+	ND_LVAR, // ローカル変数
+	ND_NUM // 整数
 } NodeKind;
 
 typedef struct Node Node;
@@ -47,12 +49,14 @@ struct Node {
 	Node *lhs;
 	Node *rhs;
 	int val;
+	int offset; //kindがND_LVARの時に使う
 };
 
 extern Token *token;
 extern char *usr_input;
 
 bool consume(char *);
+bool consume_ident(char *);
 void expect(char *);
 int expect_num();
 bool at_eof();
@@ -74,3 +78,4 @@ Node *relational();
 Node *add();
 
 void gen(Node *node);
+void gen_lval(Node *node);
